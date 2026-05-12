@@ -527,8 +527,10 @@ not been created. In order to compensate for these limitations, the specific bra
 is compiled, and most significantly with the support of the Red Pitaya Zynq processor as
 detailed at \url{https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/189530183/Zynq-7000}.
 % \url{https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18842054/QEMU+-+Zynq-7000}. 
-Notice that compiling all of {\tt qemu} is not needed but that after adding the devicetree
-compiler with \verb~git submodule update --init dtc~ we will only compile the wanted target,
+Notice that compiling all of {\tt qemu} is not needed,
+%  but that after adding the devicetree
+% compiler with \verb~git submodule update --init dtc~ 
+we will only compile the wanted target,
 namely \\
 % 260327 \verb~$./configure --target-list="aarch64-softmmu" --enable-fdt --disable-kvm --disable-xen~
 \verb~$./configure --target-list="arm-softmmu" --disable-werror --enable-fdt --disable-kvm --disable-xen~
@@ -548,13 +550,13 @@ machine whose Ethernet interface is detected as {\tt eth0}. The command line to 
 sudo .../qemu-system-arm -append "console=ttyPS0,115200 root=/dev/mmcblk0 -boot mode=5 \
 rw earlyprintk" -M arm-generic-fdt-7series -machine linux=on -smp 2 -m 1024  -serial mon:stdio \
 -dtb zynq-red_pitaya.dtb -nographic -kernel zImage -initrd rootfs.cpio.gz \
--net nic -net nic -net nic -net nic -net tap,downscript=no
+-net nic -net nic -net nic -net nic -net tap,script=no,downscript=no
 \end{verbatim}
 
 \noindent
 with the whole command launched from Buildroot's {\tt output/images} directory to avoid filling
 the full path of all the files (devicetree {\tt zynq-red\_pitaya.dtb}, root filesystem 
-{\tt rootfs.ext4}, Linux kernel {\tt zImage}). Notice that this command must be launched as
+{\tt rootfs.*}, Linux kernel {\tt zImage}). Notice that this command must be launched as
 {\bf administrator (root) on the PC} in order to be allowed to create the {\tt tap0} network 
 interface on the host.
 
@@ -1878,8 +1880,7 @@ such a functionality is provided by {\tt mmap()}. From the kernel space, it is {
 Electronics engineers are only aware of physical addresses for reaching a peripheral: this is
 the address associated with each register in the microcontroller datasheet. The computer
 scientist only knows virtual addresses, as handled by the operating system running on top of the
-MMU. We must provide a link between these two worlds in order to let the communicate.
-% Previous paragraph : to let the ??? communicate ?
+MMU. We must provide a link between these two worlds in order to let them communicate.
 
 At the kernel level, the instruction \cite[chap.9]{ldd3} in charge of this link is
 {\tt void *ioremap(unsigned long phys\_addr, unsigned long size);}
@@ -2296,12 +2297,10 @@ MODULE_DEVICE_TABLE(of, simple_driver_of_match);
 \end{verbatim}
 }
 
-% Following paragraph : the {\tt modules.alias.bin} found in the {\tt /lib/modules/VER/} directory of the Red Pitaya running Linux version {\tt VER} ??? but ??? be filled
-running Linux version {\tt VER} but be filled
 \noindent the driver should be loaded at boot time. However, for the Linux kernel to be
 aware of the link between the kernel module name and the associated {\tt compatible} keyword,
 the {\tt modules.alias.bin} found in the {\tt /lib/modules/VER/} directory of the Red Pitaya
-running Linux version {\tt VER} but be filled. To generated this binary file and the associated
+running Linux version {\tt VER} must be filled. To generated this binary file and the associated
 human readable {\tt modules.alias} files, the following step are used, assuming the Buildroot
 cross-compilation toolchain is locate in {\tt \$BR}:
 \begin{enumerate}
@@ -2442,7 +2441,7 @@ redpitaya> insmod /tmp/0mymod.ko
 [Switching to Thread 192]
  
 Thread 69 hit Breakpoint 1, find_module_sections (info=0xe0929ef0, mod=<optimized out>) at
-	kernel/module/main.c:2104
+kernel/module/main.c:2104
 2104            mod->kp = section_objs(info, "__param",
 \end{verbatim}
 
@@ -2469,8 +2468,7 @@ Thread 67 hit Breakpoint 2.2, hello_end () at .../0mymod.c:6
 % debug symbols:
 % https://stackoverflow.com/questions/28298220/kernel-module-no-debugging-symbols-found
 
-% Twice Linux ???
-\section{Compiling a Linux image Linux with Xenomai support (real-time extension but no DTBO 
+\section{Compiling a Linux image with Xenomai support (real-time extension but no DTBO 
 support)}\label{xe}
 
 Xenomai has been ported to the Zynq
@@ -2763,8 +2761,7 @@ sessions).
 
 \section{Latency qualification}
 
-% Next paragraph : Does ``explicited'' exist in English ???
-The four examples explicited below investigate how different delays between toggling
+The four examples described below investigate how different delays between toggling
 LED state either by calling the {\tt sleep} function (active delay), or by calling a timer
 callback function. Without Xenomai, calling signal callbacks leads to the worst stability
 as soon as the processor becomes loaded. In all other cases, quantifying latency is achieved
@@ -2862,9 +2859,8 @@ Unloaded
 
 \section{FPGA configuration}
 
-% Next paragraph : accessined ???
 While a classical FPGA requires a dedicated framework for configuration (e.g. JTAG probe),
-the Zynq allows accessined the Programmable Logic part (PL) of the chip from its general
+the Zynq allows accessing the Programmable Logic part (PL) of the chip from its general
 purpose Processing System (PS). 
 %Two methods are provided to achieve such a result:
 %historicaly, Xilinx has added a driver module creating {\tt /dev/xdevcfg} in which writing
@@ -3052,12 +3048,19 @@ xilinx-xadc-core.c:     { .compatible = "xlnx,zynq-xadc-1.00.a", (void *)&xadc_z
 \end{verbatim}
 which is indeed stored with other IIO drivers.
 
-The base address of the XADC connected to the PS is documented at page 1160 of \url{ug585-Zynq-7000.pdf}: the registers for configuring the XADC from the PS are located at addresses starting at 0xf8007100. In order to comply with the XADC address organization in the bitstream and describe this organization in the devicetree when loading the IIO driver, we must compile the {\tt xilinx\_xadc.ko} driver as a module (as opposed to a static link into the kernel). 
+The base address of the XADC connected to the PS is documented at page 1160 of \url{ug585-Zynq-7000.pdf}: the
+registers for configuring the XADC from the PS are located at addresses starting at 0xf8007100. In order to
+comply with the XADC address organization in the bitstream describe this organization in the devicetree when
+loading the IIO driver, we must compile the {\tt xilinx\_xadc.ko} driver as a module (as opposed to a static
+link into the kernel). 
 % recompiler le driver XADC en MODULE afin de le recharger avec la nouvelle config fournie dans le dts
 % make linux && make
 Once loaded, the IIO peripheral is accessible at {\tt /sys/bus/iio/devices/iio:device0}.
 
-The \url{Red_Pitaya_Schematics_STEM_125-10_V1.0.pdf} schematic describes the relation between the information screen printed on the printed circuit board and the Zynq pin names and their functions: AI0 is connected to AD8, AI1 is connected to AD0, AI2 is connected to AD1 and AI3 is connected to AD9, which helps understanding the naming chosen in the IIO driver:
+The \url{Red_Pitaya_Schematics_STEM_125-10_V1.0.pdf} schematic describes the relation between the information
+screen printed on the printed circuit board and the Zynq pin names and their functions: AI0 is connected to
+AD8, AI1 is connected to AD0, AI2 is connected to AD1 and AI3 is connected to AD9, which helps understanding
+the naming chosen in the IIO driver:
 
 \begin{minipage}[t]{\linewidth}
 \begin{minipage}{.49\linewidth}
